@@ -1,0 +1,82 @@
+package com.example.schooldatacollector.presentation.viewmodel
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.example.schooldatacollector.domain.model.Student
+import com.example.schooldatacollector.domain.repository.StudentRepository
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.launch
+
+class TeacherDashboardViewModel(
+    private val repository: StudentRepository
+) : ViewModel() {
+
+    private val _students = MutableStateFlow<List<Student>>(emptyList())
+    val students: StateFlow<List<Student>> = _students.asStateFlow()
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
+    // Assuming we get the class name from login or selection later.
+    // For now, let's observe a specific class.
+    private val _currentClass = MutableStateFlow("Class 5A")
+    val currentClass: StateFlow<String> = _currentClass.asStateFlow()
+
+    private var fetchJob: Job? = null
+
+    init {
+        loadStudentsForClass(_currentClass.value)
+    }
+
+    fun loadStudentsForClass(className: String) {
+        _currentClass.value = className
+        fetchJob?.cancel()
+        fetchJob = viewModelScope.launch {
+            _isLoading.value = true
+            repository.getStudentsByClass(className)
+                .catch { e ->
+                    _error.value = e.message ?: "Failed to load students"
+                    _isLoading.value = false
+                }
+                .collect { studentList ->
+                    _students.value = studentList
+                    _isLoading.value = false
+                    _error.value = null
+                }
+        }
+    }
+
+    fun updateStudentDetails(student: Student, fatherName: String, cnic: String, fee: Double, comment: String) {
+        viewModelScope.launch {
+            try {
+                val updatedStudent = student.copy(
+                    fatherName = fatherName,
+                    fatherCnic = cnic,
+                    fee = fee,
+                    comment = comment
+                )
+                repository.updateStudent(updatedStudent)
+                _error.value = null
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to update student"
+            }
+        }
+    }
+
+    // A helper method if we ever need to fetch siblings in this VM
+    fun getSiblings(cnic: String, onResult: (List<Student>) -> Unit) {
+        viewModelScope.launch {
+            repository.getStudentsByFatherCnic(cnic).collect { siblings ->
+                onResult(siblings)
+            }
+        }
+    }
+}

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "586715559339",
+    "project_id": "school-data-collector-2cbe7",
+    "storage_bucket": "school-data-collector-2cbe7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:586715559339:android:602294a6c7ab79f01bceee",
+        "android_client_info": {
+          "package_name": "com.example.schooldatacollector"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAMxdJ-VI5iDrJoFy3MtP9pgjHYwZzWBWk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
