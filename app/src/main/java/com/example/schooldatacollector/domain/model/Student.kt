@@ -8,5 +8,6 @@ data class Student(
     val fatherName: String = "",
     val fatherCnic: String = "",
     val fee: Double = 0.0,
-    val comment: String = ""
+    val comment: String = "",
+    val branch: String = "2",
 )

@@ -3,6 +3,7 @@ package com.example.schooldatacollector.data.repository
 import com.example.schooldatacollector.domain.model.Student
 import com.example.schooldatacollector.domain.repository.StudentRepository
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -14,27 +15,8 @@ class StudentRepositoryImpl(
 
     private val collectionRef = firestore.collection("students")
 
-    override fun getAllStudents(): Flow<List<Student>> = callbackFlow {
-        val listenerRegistration = collectionRef.addSnapshotListener { snapshot, error ->
-            if (error != null) {
-                close(error)
-                return@addSnapshotListener
-            }
-
-            val students = snapshot?.documents?.mapNotNull { document ->
-                document.toObject(Student::class.java)?.copy(id = document.id)
-            } ?: emptyList()
-
-            trySend(students)
-        }
-
-        awaitClose {
-            listenerRegistration.remove()
-        }
-    }
-
-    override fun getStudentsByClass(className: String): Flow<List<Student>> = callbackFlow {
-        val query = collectionRef.whereEqualTo("className", className)
+    override fun getAllStudents(limit: Int?): Flow<List<Student>> = callbackFlow {
+        val query = if (limit != null) collectionRef.limit(limit.toLong()) else collectionRef
         val listenerRegistration = query.addSnapshotListener { snapshot, error ->
             if (error != null) {
                 close(error)
@@ -53,8 +35,32 @@ class StudentRepositoryImpl(
         }
     }
 
-    override fun getStudentsByFatherCnic(fatherCnic: String): Flow<List<Student>> = callbackFlow {
-        val query = collectionRef.whereEqualTo("fatherCnic", fatherCnic)
+    override fun getStudentsByClass(className: String, limit: Int?): Flow<List<Student>> = callbackFlow {
+        var query: Query = collectionRef.whereEqualTo("className", className)
+        if (limit != null) query = query.limit(limit.toLong())
+        
+        val listenerRegistration = query.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                close(error)
+                return@addSnapshotListener
+            }
+
+            val students = snapshot?.documents?.mapNotNull { document ->
+                document.toObject(Student::class.java)?.copy(id = document.id)
+            } ?: emptyList()
+
+            trySend(students)
+        }
+
+        awaitClose {
+            listenerRegistration.remove()
+        }
+    }
+
+    override fun getStudentsByFatherCnic(fatherCnic: String, limit: Int?): Flow<List<Student>> = callbackFlow {
+        var query: Query = collectionRef.whereEqualTo("fatherCnic", fatherCnic)
+        if (limit != null) query = query.limit(limit.toLong())
+        
         val listenerRegistration = query.addSnapshotListener { snapshot, error ->
             if (error != null) {
                 close(error)

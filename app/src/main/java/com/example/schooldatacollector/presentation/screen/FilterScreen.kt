@@ -67,6 +67,15 @@ fun FilterScreen(
                 }
             )
 
+            FilterRow(
+                title = "Limit queries to 10 entries",
+                subtitle = "Saves Firestore data usage by not fetching the entire database. Turn off to see all.",
+                checked = filterState.fetchLimited,
+                onCheckedChange = { 
+                    FilterManager.updateFilter(filterState.copy(fetchLimited = it)) 
+                }
+            )
+
             Spacer(modifier = Modifier.weight(1f))
             
             Button(

@@ -7,7 +7,8 @@ import kotlinx.coroutines.flow.asStateFlow
 data class FilterState(
     val showOnlyMissingInfo: Boolean = false,
     val showOnlyWithComments: Boolean = false,
-    val showOnlyClear: Boolean = false
+    val showOnlyClear: Boolean = false,
+    val fetchLimited: Boolean = true // True = fetch max 10, False = fetch all
 )
 
 object FilterManager {
