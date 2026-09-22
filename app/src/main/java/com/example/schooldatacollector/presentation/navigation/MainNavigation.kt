@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddModerator
 import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.FamilyRestroom
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -18,13 +19,17 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.schooldatacollector.presentation.screen.AddStudentScreen
 import com.example.schooldatacollector.presentation.screen.AdminDashboardScreen
+import com.example.schooldatacollector.presentation.screen.FilterScreen
+import com.example.schooldatacollector.presentation.screen.SiblingsScreen
 import com.example.schooldatacollector.presentation.screen.TeacherDashboardScreen
 import com.example.schooldatacollector.presentation.viewmodel.AppViewModelFactory
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     object Admin : Screen("admin", "Admin", Icons.Default.AddModerator)
     object Teacher : Screen("teacher", "Teacher", Icons.Default.Dashboard)
+    object Siblings : Screen("siblings", "Siblings", Icons.Default.FamilyRestroom)
 }
 
 @Composable
@@ -33,29 +38,35 @@ fun MainNavigation() {
 
     val items = listOf(
         Screen.Admin,
-        Screen.Teacher
+        Screen.Teacher,
+        Screen.Siblings
     )
 
     Scaffold(
         bottomBar = {
-            NavigationBar {
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currentDestination = navBackStackEntry?.destination
-                items.forEach { screen ->
-                    NavigationBarItem(
-                        icon = { Icon(screen.icon, contentDescription = null) },
-                        label = { Text(screen.title) },
-                        selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
-                        onClick = {
-                            navController.navigate(screen.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
+            val navBackStackEntry by navController.currentBackStackEntryAsState()
+            val currentRoute = navBackStackEntry?.destination?.route
+
+            // Only show bottom bar on the main tabs, not on full screen dialogs like add_student or filter
+            if (currentRoute in items.map { it.route }) {
+                NavigationBar {
+                    val currentDestination = navBackStackEntry?.destination
+                    items.forEach { screen ->
+                        NavigationBarItem(
+                            icon = { Icon(screen.icon, contentDescription = null) },
+                            label = { Text(screen.title) },
+                            selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                            onClick = {
+                                navController.navigate(screen.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                                launchSingleTop = true
-                                restoreState = true
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
@@ -69,12 +80,32 @@ fun MainNavigation() {
         ) {
             composable(Screen.Admin.route) {
                 AdminDashboardScreen(
-                    viewModel = viewModel(factory = AppViewModelFactory)
+                    viewModel = viewModel(factory = AppViewModelFactory),
+                    onNavigateToAdd = { navController.navigate("add_student") },
+                    onNavigateToFilter = { navController.navigate("filter") }
+                )
+            }
+            composable("add_student") {
+                AddStudentScreen(
+                    viewModel = viewModel(factory = AppViewModelFactory),
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
             composable(Screen.Teacher.route) {
                 TeacherDashboardScreen(
-                    viewModel = viewModel(factory = AppViewModelFactory)
+                    viewModel = viewModel(factory = AppViewModelFactory),
+                    onNavigateToFilter = { navController.navigate("filter") }
+                )
+            }
+            composable(Screen.Siblings.route) {
+                SiblingsScreen(
+                    viewModel = viewModel(factory = AppViewModelFactory),
+                    onNavigateToFilter = { navController.navigate("filter") }
+                )
+            }
+            composable("filter") {
+                FilterScreen(
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
         }

@@ -3,6 +3,7 @@ package com.example.schooldatacollector.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.schooldatacollector.domain.FilterManager
 import com.example.schooldatacollector.domain.model.Student
 import com.example.schooldatacollector.domain.repository.StudentRepository
 import kotlinx.coroutines.Job
@@ -10,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 class TeacherDashboardViewModel(
@@ -27,13 +29,14 @@ class TeacherDashboardViewModel(
 
     // Assuming we get the class name from login or selection later.
     // For now, let's observe a specific class.
-    private val _currentClass = MutableStateFlow("Class 5A")
+    private val _currentClass = MutableStateFlow("")
     val currentClass: StateFlow<String> = _currentClass.asStateFlow()
 
     private var fetchJob: Job? = null
 
     init {
-        loadStudentsForClass(_currentClass.value)
+        // We will no longer load a default class on init
+        // loadStudentsForClass(_currentClass.value)
     }
 
     fun loadStudentsForClass(className: String) {
@@ -41,16 +44,30 @@ class TeacherDashboardViewModel(
         fetchJob?.cancel()
         fetchJob = viewModelScope.launch {
             _isLoading.value = true
-            repository.getStudentsByClass(className)
-                .catch { e ->
-                    _error.value = e.message ?: "Failed to load students"
-                    _isLoading.value = false
+            combine(
+                repository.getStudentsByClass(className),
+                FilterManager.filterState
+            ) { students, filter ->
+                students.filter { student ->
+                    val isMissingInfo = student.fatherCnic.isBlank() || student.fatherName.isBlank()
+                    val hasComment = student.comment.isNotBlank()
+                    val isClear = !isMissingInfo && !hasComment
+
+                    if (filter.showOnlyMissingInfo && !isMissingInfo) return@filter false
+                    if (filter.showOnlyWithComments && !hasComment) return@filter false
+                    if (filter.showOnlyClear && !isClear) return@filter false
+                    true
                 }
-                .collect { studentList ->
-                    _students.value = studentList
-                    _isLoading.value = false
-                    _error.value = null
-                }
+            }
+            .catch { e ->
+                _error.value = e.message ?: "Failed to load students"
+                _isLoading.value = false
+            }
+            .collect { studentList ->
+                _students.value = studentList
+                _isLoading.value = false
+                _error.value = null
+            }
         }
     }
 

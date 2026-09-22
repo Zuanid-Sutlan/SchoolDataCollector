@@ -14,8 +14,8 @@ object AppViewModelFactory : ViewModelProvider.Factory {
             modelClass.isAssignableFrom(TeacherDashboardViewModel::class.java) -> {
                 TeacherDashboardViewModel(AppModule.studentRepository) as T
             }
-            modelClass.isAssignableFrom(SchoolViewModel::class.java) -> {
-                SchoolViewModel(AppModule.schoolRepository) as T
+            modelClass.isAssignableFrom(SiblingsViewModel::class.java) -> {
+                SiblingsViewModel(AppModule.studentRepository) as T
             }
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }
