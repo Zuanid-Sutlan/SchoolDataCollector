@@ -141,7 +141,7 @@ fun ParentGroupCard(parentKey: String, children: List<Student>) {
                         .padding(vertical = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(text = "• ${child.name}", style = MaterialTheme.typography.bodyMedium)
+                    Text(text = "• ${child.name} (${child.fee})", style = MaterialTheme.typography.bodyMedium)
                     Text(text = child.className, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
                 }
             }

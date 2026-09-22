@@ -6,6 +6,7 @@ import com.example.schooldatacollector.domain.FilterManager
 import com.example.schooldatacollector.domain.model.Student
 import com.example.schooldatacollector.domain.repository.StudentRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -23,38 +24,46 @@ class SiblingsViewModel(
     val error: StateFlow<String?> = _error.asStateFlow()
 
     // Map of Father's CNIC to List of Students (Siblings)
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val groupedStudents: StateFlow<Map<String, List<Student>>> = FilterManager.filterState
-        .flatMapLatest { filter ->
-            val limit = if (filter.fetchLimited) 10 else null
-            repository.getAllStudents(limit = limit)
-                .combine(_searchQuery) { allStudents, query ->
-                    val searchFiltered = if (query.isBlank()) {
-                        allStudents
-                    } else {
-                        allStudents.filter { student ->
-                            student.name.contains(query, ignoreCase = true) ||
+    @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
+    val groupedStudents: StateFlow<Map<String, List<Student>>> = combine(
+        FilterManager.filterState,
+        _searchQuery.debounce(300L) // Add debounce so we don't spam Firestore while typing
+    ) { filter, query ->
+        Pair(filter, query)
+    }.flatMapLatest { (filter, query) ->
+        // If there is an active search query, we override the limit to fetch all.
+        // Otherwise, we respect the user's toggle setting.
+        val limit = if (query.isNotBlank()) null else if (filter.fetchLimited) 10 else null
+        
+        repository.getAllStudents(limit = limit).map { allStudents ->
+            val searchFiltered = if (query.isBlank()) {
+                allStudents
+            } else {
+                allStudents.filter { student ->
+                    student.name.contains(query, ignoreCase = true) ||
                             student.studentId.contains(query, ignoreCase = true) ||
                             student.fatherName.contains(query, ignoreCase = true) ||
-                            student.fatherCnic.contains(query, ignoreCase = true)
-                        }
-                    }
-
-                    val fullyFiltered = searchFiltered.filter { student ->
-                        val isMissingInfo = student.fatherCnic.isBlank() || student.fatherName.isBlank()
-                        val hasComment = student.comment.isNotBlank()
-                        val isClear = !isMissingInfo && !hasComment
-
-                        if (filter.showOnlyMissingInfo && !isMissingInfo) return@filter false
-                        if (filter.showOnlyWithComments && !hasComment) return@filter false
-                        if (filter.showOnlyClear && !isClear) return@filter false
-                        true
-                    }
-
-                    // Group by CNIC. If CNIC is empty, group by Father's Name as a fallback.
-                    fullyFiltered.groupBy { it.fatherCnic.ifBlank { "N/A" } }
+                            student.fatherCnic.contains(query, ignoreCase = true) ||
+                            student.className.contains(query, ignoreCase = true)
                 }
-        }.stateIn(viewModelScope, SharingStarted.Lazily, emptyMap())
+            }
+
+            val fullyFiltered = searchFiltered.filter { student ->
+                val isMissingInfo =
+                    student.fatherCnic.isBlank() || student.fatherName.isBlank()
+                val hasComment = student.comment.isNotBlank()
+                val isClear = !isMissingInfo && !hasComment
+
+                if (filter.showOnlyMissingInfo && !isMissingInfo) return@filter false
+                if (filter.showOnlyWithComments && !hasComment) return@filter false
+                if (filter.showOnlyClear && !isClear) return@filter false
+                true
+            }
+
+            // Group by CNIC. If CNIC is empty, group by Father's Name as a fallback.
+            fullyFiltered.groupBy { it.fatherCnic.ifBlank { it.fatherName } }
+        }
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyMap())
 
     init {
         // Initialization handled by StateFlow

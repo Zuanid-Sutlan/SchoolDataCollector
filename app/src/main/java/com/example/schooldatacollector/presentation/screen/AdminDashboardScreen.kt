@@ -60,7 +60,7 @@ fun AdminDashboardScreen(
                     ),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(students) { student ->
+                    items(students.reversed()) { student ->
                         AdminStudentItem(student = student)
                     }
                 }

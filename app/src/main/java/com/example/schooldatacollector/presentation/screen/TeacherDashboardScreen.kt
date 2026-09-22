@@ -40,13 +40,12 @@ fun TeacherDashboardScreen(
     var selectedStudent by remember { mutableStateOf<Student?>(null) }
 
     var searchClassQuery by remember { mutableStateOf("") }
-    val focusManager = LocalFocusManager.current
 
     var expanded by remember { mutableStateOf(false) }
 
     // Derive a list of unique classes from all loaded students (or you could load this from a global state/repository)
     // For now, we allow the teacher to either type or pick from recently searched classes
-    val recentClasses = remember { mutableStateListOf("4A", "4B", "4C", "4D") }
+    val recentClasses = remember { mutableStateListOf("4A", "4B", "4C", "4D", "10A", "10B", "10C") }
 
     Scaffold(
         modifier = modifier,
@@ -58,31 +57,16 @@ fun TeacherDashboardScreen(
                         onExpandedChange = { expanded = !expanded }
                     ) {
                         TextField(
-                            value = searchClassQuery,
-                            onValueChange = { searchClassQuery = it },
-                            placeholder = { Text("Enter Class (e.g. Class 5A)") },
+                            value = "$searchClassQuery (${students.size})",
+                            onValueChange = { },
+                            readOnly = true,
+                            placeholder = { Text("Select Class") },
                             singleLine = true,
                             colors = TextFieldDefaults.colors(
                                 focusedContainerColor = Color.Transparent,
                                 unfocusedContainerColor = Color.Transparent,
                                 focusedIndicatorColor = Color.Transparent,
                                 unfocusedIndicatorColor = Color.Transparent
-                            ),
-                            keyboardOptions = KeyboardOptions(
-                                capitalization = KeyboardCapitalization.Words,
-                                imeAction = ImeAction.Search
-                            ),
-                            keyboardActions = KeyboardActions(
-                                onSearch = { 
-                                    if (searchClassQuery.isNotBlank()) {
-                                        if (!recentClasses.contains(searchClassQuery)) {
-                                            recentClasses.add(searchClassQuery)
-                                        }
-                                        viewModel.loadStudentsForClass(searchClassQuery)
-                                        expanded = false
-                                        focusManager.clearFocus()
-                                    }
-                                }
                             ),
                             modifier = Modifier.menuAnchor(),
                             trailingIcon = {
@@ -94,31 +78,13 @@ fun TeacherDashboardScreen(
                             expanded = expanded,
                             onDismissRequest = { expanded = false }
                         ) {
-                            val filteredClasses = recentClasses.filter { it.contains(searchClassQuery, ignoreCase = true) }
-                            if (filteredClasses.isNotEmpty()) {
-                                filteredClasses.forEach { className ->
-                                    DropdownMenuItem(
-                                        text = { Text(className) },
-                                        onClick = {
-                                            searchClassQuery = className
-                                            viewModel.loadStudentsForClass(className)
-                                            expanded = false
-                                            focusManager.clearFocus()
-                                        }
-                                    )
-                                }
-                            } else {
+                            recentClasses.forEach { className ->
                                 DropdownMenuItem(
-                                    text = { Text("Load '$searchClassQuery'") },
+                                    text = { Text(className) },
                                     onClick = {
-                                        if (searchClassQuery.isNotBlank()) {
-                                            if (!recentClasses.contains(searchClassQuery)) {
-                                                recentClasses.add(searchClassQuery)
-                                            }
-                                            viewModel.loadStudentsForClass(searchClassQuery)
-                                            expanded = false
-                                            focusManager.clearFocus()
-                                        }
+                                        searchClassQuery = className
+                                        viewModel.loadStudentsForClass(className)
+                                        expanded = false
                                     }
                                 )
                             }

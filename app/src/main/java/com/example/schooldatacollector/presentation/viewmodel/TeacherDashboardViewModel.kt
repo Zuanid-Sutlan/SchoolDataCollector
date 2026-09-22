@@ -50,7 +50,8 @@ class TeacherDashboardViewModel(
             _isLoading.value = true
             FilterManager.filterState
                 .flatMapLatest { filter ->
-                    val limit = if (filter.fetchLimited) 10 else null
+                    // When a specific class is requested, we drop the limit to show the whole class
+                    val limit = null
                     repository.getStudentsByClass(className, limit)
                         .catch { e ->
                             _error.value = e.message ?: "Failed to load students"
