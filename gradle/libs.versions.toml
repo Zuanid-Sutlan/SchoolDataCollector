@@ -12,6 +12,7 @@ googleGmsGoogleServices = "4.5.0"
 firebaseFirestore = "26.6.0"
 lifecycleViewmodelCompose = "2.8.7"
 navigationCompose = "2.8.5"
+fastexcel = "0.20.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -32,6 +33,7 @@ androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-te
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
 firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore", version.ref = "firebaseFirestore" }
+fastexcel = { group = "org.dhatim", name = "fastexcel", version.ref = "fastexcel" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
